@@ -7,8 +7,8 @@ import { AuthService } from '../auth.service';
 export class GoogleStrategy extends PassportStrategy(Strategy) {
   constructor(private authService: AuthService) {
     super({
-      clientID: "아기랑꺼",
-      clientSecret: "넣으시면 될것같아요",
+      clientID: "",
+      clientSecret: "",
       callbackURL: 'http://localhost:3000/auth/google/callback', //나중에 수정 필요
       scope: ['profile', 'email'],
     });
