@@ -1,0 +1,73 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  directUrl = env("DATABASE_URL_UNPOOLED")
+}
+
+model User {
+  id String @id @default(uuid())
+  username String
+  email String @unique
+  password String
+  location String // 한글
+  baby_born String // 한글
+  created_at DateTime @default(now())
+
+  story Story[] @relation("User's_Story")
+  likes Like[] @relation("User's_Likes")
+
+}
+
+
+model Story {
+  id String @id @default(uuid())
+  title String
+  user User @relation("User's_Story", fields: [user_id], references: [id])
+  user_id String
+  created_at DateTime @default(now())
+
+  detail StoryDetail[] @relation("Story")
+}
+
+model StoryDetail {
+  id String @id @default(uuid())
+  page Int
+  content String
+  media_url String
+  story Story @relation("Story", fields: [story_id], references: [id])
+  story_id String
+  created_at DateTime @default(now())
+}
+
+model Politics {
+  id String @id @default(uuid())
+  title String
+  content String
+  target String
+  condition String
+  support String // 지원 금액
+  created_at DateTime @default(now())
+
+  likes Like[] @relation("Politics")
+}
+
+model Like {
+  id String @id @default(uuid())
+  politics Politics @relation("Politics", fields: [politics_id], references: [id])
+  politics_id String
+  user User @relation("User's_Likes", fields: [user_id], references: [id])
+  user_id String
+  created_at DateTime @default(now())
+
+  @@unique([politics_id, user_id])
+}

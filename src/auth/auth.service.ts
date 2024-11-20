@@ -1,29 +1,49 @@
-import { Injectable } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
-import { Payload } from './jwt.payload';
+import { Injectable, UnauthorizedException } from "@nestjs/common";
+import { JwtService } from "@nestjs/jwt";
+import * as bcrypt from "bcryptjs";
+import { PrismaService } from "../prisma/prisma.service";
+import { RegisterDTO } from "./dto/auth.dto";
 
 @Injectable()
 export class AuthService {
   constructor(
-    private readonly jwtService: JwtService,
+    private jwtService: JwtService,
+    private prisma: PrismaService
   ) {}
 
-  async generateJwt(user: any): Promise<string> {
-    const payload:Payload = { googleId: user.googleId, name: user.name, email: user.email };
-    return this.jwtService.sign(payload);
+  async validateUser(email: string, password: string): Promise<any> {
+    const user = await this.prisma.user.findUnique({ where: { email } });
+    if (user && (await bcrypt.compare(password, user.password))) {
+      return user;
+    }
+    throw new UnauthorizedException("Invalid credentials");
   }
 
-  async validateGoogleUser(profile: any): Promise<any> {
-    const { id, displayName, emails } = profile;
-    const email = emails && emails[0] ? emails[0].value : null;
-
-    const user = {
-      googleId: id,
-      name: displayName,
-      email: email,
+  async login(user: any) {
+    const payload = { username: user.username, sub: user.id };
+    return {
+      access_token: this.jwtService.sign(payload),
     };
+  }
 
-
-    return user;
+  async register(registerDTO: RegisterDTO) {
+    const existingUser = await this.prisma.user.findUnique({
+      where: { email: registerDTO.email },
+    });
+    if (existingUser) {
+      throw new Error("이미 등록된 이메일입니다.");
+    }
+    const hashedPassword = await bcrypt.hash(registerDTO.password, 10);
+    const user = await this.prisma.user.create({
+      data: {
+        email: registerDTO.email,
+        password: hashedPassword,
+        username: "",
+        baby_born: "",
+        location: "",
+      },
+    });
+    console.log(user);
+    return this.login(user);
   }
 }

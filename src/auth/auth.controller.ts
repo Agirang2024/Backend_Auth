@@ -1,38 +1,34 @@
 import {
+  Body,
   Controller,
-  Req,
-  UseGuards,
   Get,
-  Res,
+  Post,
+  Request,
+  UseGuards,
 } from '@nestjs/common';
-import { AuthGuard } from '@nestjs/passport';
 import { AuthService } from './auth.service';
-import { Response } from 'express';
-import { JwtAuthGuard } from './Guard/jwt.guard';
+import { LocalAuthGuard } from './Guards/local.auth-guard';
+import { JWTAuthGuard } from './Guards/jwt.auth-guard';
+import { RegisterDTO } from './dto/auth.dto';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(private authService: AuthService) {}
 
-  @Get('google')
-  @UseGuards(AuthGuard('google'))
-  googleAuth(@Req() req) {
-    console.log('google-login');
+  @UseGuards(LocalAuthGuard)
+  @Post('login')
+  async login(@Request() req) {
+    return this.authService.login(req.user);
   }
 
-  @Get('google/callback')
-  @UseGuards(AuthGuard('google'))
-  async googleAuthCallback(@Req() req, @Res() res: Response) {
-    console.log('google-login-end');
-    const user = req.user;
-    const jwt = await this.authService.generateJwt(user);
-
-    return res.redirect(`http://localhost:5173/callback?access_token=${jwt}`);
+  @Post('register')
+  async register(@Body() registerDTO: RegisterDTO) {
+    return this.authService.register(registerDTO);
   }
 
+  @UseGuards(JWTAuthGuard)
   @Get('profile')
-  @UseGuards(JwtAuthGuard)
-  async getProfile(@Req() req) {
+  async GetProfile(@Request() req) {
     return req.user;
   }
 }
